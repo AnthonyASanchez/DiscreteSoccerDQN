@@ -146,17 +146,25 @@ class gameEnv():
         return bot,action
 
     def networkInput(self):
-        max_arg=random.randint(0,14)
-        action_space=5
+        max_arg = random.randint(0,15)
+        #The first input does nothing
+        if max_arg == 0:
+            print("Do nothing")
+            return -1,-1
+        #Reduce by 1 so the bot and action selection arithemetic can still be accurate
+        max_arg -= 1
+        action_space = 5
         #Calculates which bot, there are action_space * bots total options + 1 None
         bot = int(math.floor(max_arg/action_space))
-        action=max_arg%action_space
+        action= max_arg%action_space
         print("Max arg: ",max_arg)
         print("Bot:{} Action: {}".format(bot,action))
-        return bot,action
+        return bot, action
 
     def playerTurn(self):
         bot,action=self.networkInput()
+        if bot == -1 and action == -1:
+            return
         for row in range(self.grid_length):
             for col in self.object_grid[row]:
                 if col.name is "Player" and col.x == bot:
