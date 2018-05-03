@@ -37,18 +37,22 @@ class gameEnv():
         self.x_buffer = image_size / user_bots
         self.y_buffer = image_size / (user_bots * 2)
         self.canvas = Image.new('RGB', (self.image_size, self.image_size), (155, 155, 155))
+        self.actions = 15
         self.draw = ImageDraw.Draw(self.canvas)
         # Used at the start of the game and to reset when game is finished
         self.reset()
 
+
     def reset(self):
         # This sets the object grid, which contains the name, coordinates,and reward of each game object (enemy, player, goal, or space)
-        self.object_grid = [[gameObj("Space", [j, i], 0, False) for j in range(self.grid_width)] for i in
+        self.object_grid = [[gameObj("Space", [j, i], -1, False) for j in range(self.grid_width)] for i in
                             range(self.grid_length)]
         self.setupGoal()
         self.setupEnemy()
         self.setupPlayer()
         self.game_over = False
+        self.drawGridState()
+        return np.asarray(self.canvas)
 
     def setupGoal(self):
         # Fill in the goal which is always placed on the top row
@@ -73,7 +77,7 @@ class gameEnv():
             if i == receive_ball:
                 has_ball = True
             # The coordinates are switched with object_grid(row,col) and gameObj(x,y)
-            self.object_grid[self.grid_length - 1][i] = gameObj("Player", (i, self.grid_length - 1), 0, has_ball)
+            self.object_grid[self.grid_length - 1][i] = gameObj("Player", (i, self.grid_length - 1), -0.2, has_ball)
             has_ball = False
 
     def swapForward(self, x, y):
@@ -145,11 +149,11 @@ class gameEnv():
                 input("Please select an action (will request again if less than 0 or greater then number of actions)"))
         return bot,action
 
-    def networkInput(self):
-        max_arg = random.randint(0,15)
+    def networkInput(self, max_arg):
+        #max_arg = 15#random.randint(0,15)
         #The first input does nothing
         if max_arg == 0:
-            print("Do nothing")
+            #print("Do nothing")
             return -1,-1
         #Reduce by 1 so the bot and action selection arithemetic can still be accurate
         max_arg -= 1
@@ -157,12 +161,12 @@ class gameEnv():
         #Calculates which bot, there are action_space * bots total options + 1 None
         bot = int(math.floor(max_arg/action_space))
         action= max_arg%action_space
-        print("Max arg: ",max_arg)
-        print("Bot:{} Action: {}".format(bot,action))
+        #print("Max arg: ",max_arg)
+        #print("Bot:{} Action: {}".format(bot,action))
         return bot, action
 
-    def playerTurn(self):
-        bot,action=self.networkInput()
+    def playerTurn(self, a):
+        bot,action = self.networkInput(a)
         if bot == -1 and action == -1:
             return
         for row in range(self.grid_length):
@@ -242,8 +246,15 @@ class gameEnv():
                 elif col.has_ball and col.name is "Player":
                     return col.reward
         self.game_over = True
-        return col.reward
-
+        return -1
+    
+    def step(self,a):
+        self.playerTurn(a)
+        self.enemyTurn()
+        r = self.getReward()
+        self.drawGridState()
+        return np.asarray(self.canvas),r,self.game_over
+    
     def drawGridState(self):
         # Draws on the canvas the state of the object_grid, changing colors for each object.
         for row in range(self.grid_length):

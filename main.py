@@ -1,19 +1,41 @@
 from game_env import gameEnv
 from PIL import Image
-
+import numpy as np
+import os
+import tensorflow as tf
+from dqn import Qnetwork, processState
 
 def main():
-    env = gameEnv(200,3)
-    env.drawGridState()
-    env.canvas.show()
-    while env.game_over != True:
-        env.playerTurn()
-        env.enemyTurn()
-        reward = env.getReward()
-        env.drawGridState()
-        env.canvas.show()
-        print(reward)
+    h_size = 512  # The size of the final convolutional layer before splitting it into Advantage and Value streams.
+    path = './dqn'
+    tf.reset_default_graph()
+    mainQN = Qnetwork(h_size)
+    targetQN = Qnetwork(h_size)
+    init = tf.global_variables_initializer()
+    saver = tf.train.Saver()
+    env = gameEnv(84, 3)
+    with tf.Session() as sess:
 
+        print('Loading Model...')
+        ckpt = tf.train.get_checkpoint_state(path)
+        saver.restore(sess, "./dqn\\model-47000.ckpt")
+        s = env.reset()
+        s = processState(s)
+        while not env.game_over:
+            # The Q-Network
+            a = sess.run(mainQN.predict, feed_dict={mainQN.scalarInput: [s]})[0]
+            s, r, d = env.step(a)
+            s = processState(s)
+            env.canvas.show()
+        '''for i in range(30):
+            env.reset()
+            print(env.actions)
+            while env.game_over != True:
+                s1, r, d = env.step()
+                env.canvas.show()
+                print(r)
+                print(d)
+'''
 
 
 
