@@ -14,11 +14,12 @@ def main():
     init = tf.global_variables_initializer()
     saver = tf.train.Saver()
     env = gameEnv(84, 3)
+    env.canvas.show()
     with tf.Session() as sess:
 
         print('Loading Model...')
         ckpt = tf.train.get_checkpoint_state(path)
-        saver.restore(sess, "./dqn\\model-47000.ckpt")
+        saver.restore(sess, "./dqn\\model-49999.ckpt")
         s = env.reset()
         s = processState(s)
         while not env.game_over:
