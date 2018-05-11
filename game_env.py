@@ -37,7 +37,7 @@ class gameEnv():
         self.x_buffer = image_size / user_bots
         self.y_buffer = image_size / (user_bots * 2)
         self.canvas = Image.new('RGB', (self.image_size, self.image_size), (155, 155, 155))
-        self.actions = 15
+        self.actions = user_bots * 4
         self.draw = ImageDraw.Draw(self.canvas)
         # Used at the start of the game and to reset when game is finished
         self.reset()
@@ -82,6 +82,13 @@ class gameEnv():
 
     def swapForward(self, x, y):
         # Swapping places of gameObj and coordinates, create new gameObj to pass by value
+        if self.object_grid[y - 1][x].name is "Enemy":
+            print("Cannot walk into enemy")
+            return
+        if self.object_grid[y - 1][x].name is "Goal":
+            self.object_grid[y][x].removeBall()
+            self.object_grid[y - 1][x].has_ball = True
+            return
         temp = self.object_grid[y][x]
         temp2 = self.object_grid[y - 1][x]
         self.object_grid[y][x] = gameObj(temp2.name, (temp2.x, temp2.y), temp2.reward, temp2.has_ball)
@@ -91,6 +98,9 @@ class gameEnv():
 
     def swapDown(self, x, y):
         # Swapping places of gameObj and coordinates, create new gameObj to pass by value
+        if self.object_grid[y + 1][x].name is "Enemy":
+            print("Cannot walk into enemy")
+            return
         temp = self.object_grid[y][x]
         temp2 = self.object_grid[y + 1][x]
         self.object_grid[y][x] = gameObj(temp2.name, (temp2.x, temp2.y), temp2.reward, temp2.has_ball)
@@ -122,6 +132,26 @@ class gameEnv():
                     return
         return
 
+    def passRightAny(self, x, y):
+        # Removes the ball from who ever is passing.
+        self.object_grid[y][x].removeBall()
+        # Iterates to the right of it looking for a player to pass to.
+        for i in range(x + 1, self.grid_width):
+            for row in range(y, self.grid_length):
+                if self.object_grid[row][i].name == "Player":
+                    self.object_grid[row][i].has_ball = True
+                    return
+
+    def passLeftAny(self, x, y):
+        # Removes the ball from who ever is passing
+        self.object_grid[y][x].removeBall()
+        # Iterates to the left of it looking for a player to pass .
+        for i in range(x - 1, -1, -1):
+            for row in range(y, self.grid_length):
+                if self.object_grid[row][i].name == "Player":
+                    self.object_grid[row][i].has_ball = True
+                    return
+
     def shoot(self, x, y):
         # Only shoots if player has ball
         if self.object_grid[y][x].has_ball:
@@ -143,8 +173,8 @@ class gameEnv():
             print("Note:  bots start at 0")
             bot = int(input("Please select a bot (Will request again if less than 0 or greater then number of bots)"))
         # Requesting which action to take
-        while (action < 0 or action > 4):
-            print("Note:  actions up[0], down[1], pass_left[2], pass_right[3], shoot[4]")
+        while (action < 0 or action > 3):
+            print("Note:  actions up[0], down[1], pass_left[2], pass_right[3]")
             action = int(
                 input("Please select an action (will request again if less than 0 or greater then number of actions)"))
         return bot,action
@@ -157,7 +187,7 @@ class gameEnv():
             return -1,-1
         #Reduce by 1 so the bot and action selection arithemetic can still be accurate
         max_arg -= 1
-        action_space = 5
+        action_space = 4
         #Calculates which bot, there are action_space * bots total options + 1 None
         bot = int(math.floor(max_arg/action_space))
         action= max_arg%action_space
@@ -166,14 +196,15 @@ class gameEnv():
         return bot, action
 
     def playerTurn(self, a):
-        bot,action = self.networkInput(a)
+        #bot, action = self.networkInput(a)
+        bot, action = self.playerInput()
         if bot == -1 and action == -1:
             return
         for row in range(self.grid_length):
             for col in self.object_grid[row]:
                 if col.name is "Player" and col.x == bot:
                     # Checks if the bot is moving within bounds of its playing field
-                    if action == 0 and col.y > (self.grid_length - self.grid_width):
+                    if action == 0 and col.y > 0:  # (self.grid_length - self.grid_width):
                         # Swapping places of gameObj and coordinates, create new gameObj to pass by value
                         self.swapForward(col.x, col.y)
                         return
@@ -183,11 +214,11 @@ class gameEnv():
                         return
                     elif action == 2:
                         # Removes the ball from who ever is passing
-                        self.passLeft(col.x, col.y)
+                        self.passLeftAny(col.x, col.y)
                         return
                     elif action == 3:
                         # Removes the ball from who ever is passing.
-                        self.passRight(col.x, col.y)
+                        self.passRightAny(col.x, col.y)
                         return
                     elif action == 4:
                         # Removes ball from bot that is shooting.
@@ -196,6 +227,8 @@ class gameEnv():
 
     def moveRight(self, x, y):
         # Swapping places of gameObj and coordinates, create new gameObj to pass by value
+        if self.object_grid[y][x + 1].name is not "Space":
+            return
         temp = self.object_grid[y][x]
         temp2 = self.object_grid[y][x + 1]
         self.object_grid[y][x] = gameObj(temp2.name, (temp2.x, temp2.y), temp2.reward, temp2.has_ball)
@@ -204,6 +237,8 @@ class gameEnv():
         self.object_grid[y][x].x -= 1
 
     def moveLeft(self, x, y):
+        if self.object_grid[y][x - 1].name is not "Space":
+            return
         # Swapping places of gameObj and coordinates, create new gameObj to pass by value
         temp = self.object_grid[y][x]
         temp2 = self.object_grid[y][x - 1]
@@ -235,6 +270,23 @@ class gameEnv():
                     self.moveRight(x - 1, row)
                     return
 
+    def enemyTurnRandom(self):
+        # Choose a random row where the enemies are 1 - num_players - 1 since missing one empty bot space
+        randRow = random.randint(1, self.grid_width - 1)
+        for x, col in enumerate(self.object_grid[randRow]):
+            if col.name is "Enemy":
+                move_right = random.randint(0, 1)
+                if move_right == 1:
+                    if x == self.grid_width - 1:
+                        return
+                    self.moveRight(x, randRow)
+                    return
+                if move_right == 0:
+                    if x == 0:
+                        return
+                    self.moveLeft(x, randRow)
+                    return
+
     def getReward(self):
         # Checks where the ball is and returns the reward of where it is.
         # If the ball is no longer held by the player the game_over = True and reward is used.
@@ -250,7 +302,7 @@ class gameEnv():
     
     def step(self,a):
         self.playerTurn(a)
-        self.enemyTurn()
+        self.enemyTurnRandom()
         r = self.getReward()
         self.drawGridState()
         return np.asarray(self.canvas),r,self.game_over
