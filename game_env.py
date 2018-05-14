@@ -37,7 +37,8 @@ class gameEnv():
         self.x_buffer = image_size / user_bots
         self.y_buffer = image_size / (user_bots * 2)
         self.canvas = Image.new('RGB', (self.image_size, self.image_size), (155, 155, 155))
-        self.actions = user_bots * 4
+        self.action_space = 4
+        self.actions = user_bots * self.action_space
         self.draw = ImageDraw.Draw(self.canvas)
         # Used at the start of the game and to reset when game is finished
         self.reset()
@@ -83,7 +84,7 @@ class gameEnv():
     def swapForward(self, x, y):
         # Swapping places of gameObj and coordinates, create new gameObj to pass by value
         if self.object_grid[y - 1][x].name is "Enemy":
-            print("Cannot walk into enemy")
+           #print("Cannot walk into enemy")
             return
         if self.object_grid[y - 1][x].name is "Goal":
             self.object_grid[y][x].removeBall()
@@ -99,7 +100,7 @@ class gameEnv():
     def swapDown(self, x, y):
         # Swapping places of gameObj and coordinates, create new gameObj to pass by value
         if self.object_grid[y + 1][x].name is "Enemy":
-            print("Cannot walk into enemy")
+            #print("Cannot walk into enemy")
             return
         temp = self.object_grid[y][x]
         temp2 = self.object_grid[y + 1][x]
@@ -187,17 +188,16 @@ class gameEnv():
             return -1,-1
         #Reduce by 1 so the bot and action selection arithemetic can still be accurate
         max_arg -= 1
-        action_space = 4
         #Calculates which bot, there are action_space * bots total options + 1 None
-        bot = int(math.floor(max_arg/action_space))
-        action= max_arg%action_space
+        bot = int(math.floor(max_arg/self.action_space))
+        action= max_arg%self.action_space
         #print("Max arg: ",max_arg)
         #print("Bot:{} Action: {}".format(bot,action))
         return bot, action
 
     def playerTurn(self, a):
-        #bot, action = self.networkInput(a)
-        bot, action = self.playerInput()
+        bot, action = self.networkInput(a)
+        #bot, action = self.playerInput()
         if bot == -1 and action == -1:
             return
         for row in range(self.grid_length):

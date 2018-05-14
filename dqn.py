@@ -19,7 +19,6 @@ import scipy.misc
 
 env = gameEnv(84,3)
 env.drawGridState()
-env.actions
 
 
 # In[3]:
@@ -176,7 +175,7 @@ def main():
                 j += 1
                 #Choose action greedily(with e chance of random action) from Q-network
                 if np.random.rand(1) < e or total_steps < pre_train_steps:
-                    a = np.random.randint(0,15)
+                    a = np.random.randint(0,env.actions)
                 else:
                     a = sess.run(mainQN.predict,feed_dict={mainQN.scalarInput:[s]})[0]
                 s1,r,d = env.step(a)
