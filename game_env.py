@@ -86,9 +86,11 @@ class gameEnv():
         if self.object_grid[y - 1][x].name is "Enemy":
            #print("Cannot walk into enemy")
             return
-        if self.object_grid[y - 1][x].name is "Goal":
+        if self.object_grid[y - 1][x].name is "Goal" and self.object_grid[y][x].has_ball:
             self.object_grid[y][x].removeBall()
             self.object_grid[y - 1][x].has_ball = True
+            return
+        if self.object_grid[y - 1][x].name is "Goal":
             return
         temp = self.object_grid[y][x]
         temp2 = self.object_grid[y - 1][x]
@@ -134,24 +136,28 @@ class gameEnv():
         return
 
     def passRightAny(self, x, y):
-        # Removes the ball from who ever is passing.
-        self.object_grid[y][x].removeBall()
-        # Iterates to the right of it looking for a player to pass to.
-        for i in range(x + 1, self.grid_width):
-            for row in range(y, self.grid_length):
-                if self.object_grid[row][i].name == "Player":
-                    self.object_grid[row][i].has_ball = True
-                    return
+        # Only passes if player has ball
+        if self.object_grid[y][x].has_ball:
+            # Removes the ball from who ever is passing.
+            self.object_grid[y][x].removeBall()
+            # Iterates to the right of it looking for a player to pass to.
+            for i in range(x + 1, self.grid_width):
+                for row in range(y, self.grid_length):
+                    if self.object_grid[row][i].name == "Player":
+                        self.object_grid[row][i].has_ball = True
+                        return
 
     def passLeftAny(self, x, y):
-        # Removes the ball from who ever is passing
-        self.object_grid[y][x].removeBall()
-        # Iterates to the left of it looking for a player to pass .
-        for i in range(x - 1, -1, -1):
-            for row in range(y, self.grid_length):
-                if self.object_grid[row][i].name == "Player":
-                    self.object_grid[row][i].has_ball = True
-                    return
+        # Only passes if player has ball
+        if self.object_grid[y][x].has_ball:
+            # Removes the ball from who ever is passing
+            self.object_grid[y][x].removeBall()
+            # Iterates to the left of it looking for a player to pass .
+            for i in range(x - 1, -1, -1):
+                for row in range(y, self.grid_length):
+                    if self.object_grid[row][i].name == "Player":
+                        self.object_grid[row][i].has_ball = True
+                        return
 
     def shoot(self, x, y):
         # Only shoots if player has ball

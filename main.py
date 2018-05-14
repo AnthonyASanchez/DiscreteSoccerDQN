@@ -19,7 +19,7 @@ def main():
 
         print('Loading Model...')
         ckpt = tf.train.get_checkpoint_state(path)
-        saver.restore(sess, "./dqn\\model-49999.ckpt")
+        saver.restore(sess, "./dqn\\model-19999.ckpt")
         s = env.reset()
         s = processState(s)
         while not env.game_over:
